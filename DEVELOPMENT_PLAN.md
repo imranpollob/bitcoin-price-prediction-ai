@@ -39,22 +39,22 @@ For each model, follow this cycle:
 ## Phase 2.1: Baseline Model Implementation (Model 0 - Naive Forecast)
 
 ### Step 2.1.1: Implementation
-- [ ] Implement naive forecast function: ŷₜ = yₜ₋₁
-- [ ] Create evaluation functions for MAE, RMSE, MAPE, MASE
-- [ ] Implement model prediction functionality
-- [ ] Add model-specific parameter validation
+- [x] Implement naive forecast function: ŷₜ = yₜ₋₁
+- [x] Create evaluation functions for MAE, RMSE, MAPE, MASE
+- [x] Implement model prediction functionality
+- [x] Add model-specific parameter validation
 
 ### Step 2.1.2: Gradio Integration
-- [ ] Add Naive Forecast to model selection
-- [ ] Implement visualization for naive predictions
-- [ ] Add performance metrics display
-- [ ] Test Gradio interface functionality
+- [x] Add Naive Forecast to model selection
+- [x] Implement visualization for naive predictions
+- [x] Add performance metrics display
+- [x] Test Gradio interface functionality
 
 ### Step 2.1.3: Testing
-- [ ] Write unit tests for naive forecast function
-- [ ] Test prediction accuracy against historical data
-- [ ] Validate metrics calculation
-- [ ] Test with various inputs
+- [x] Write unit tests for naive forecast function
+- [x] Test prediction accuracy against historical data
+- [x] Validate metrics calculation
+- [x] Test with various inputs
 
 ## Phase 2.2: Dense Model Implementation (Model 1 - Window=7, Horizon=1)
 

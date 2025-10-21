@@ -10,6 +10,10 @@ def load_bitcoin_data():
     # Check in the main project root first
     data_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'bitcoin_2020-10-22_2025-10-21.csv')
     
+    # If that doesn't work, check the data directory
+    if not os.path.exists(data_path):
+        data_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'bitcoin_2020-10-22_2025-10-21.csv')
+    
     # If that doesn't work, check the backend directory
     if not os.path.exists(data_path):
         data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'bitcoin_2020-10-22_2025-10-21.csv')

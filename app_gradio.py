@@ -1,7 +1,8 @@
 import gradio as gr
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
 import os
 
@@ -107,27 +108,106 @@ def run_prediction(model_name, window_size, horizon):
             # Default to naive forecast for other models (to be implemented)
             result = naive_forecast(df, steps=horizon)
         
-        # Create visualization
-        fig, ax = plt.subplots(figsize=(12, 6))
+        # Prepare data for visualization
+        # The dataset is sorted from newest to oldest (index 0 is most recent)
         
-        # Plot historical data
+        # Get the historical data from the model result (already in chronological order)
+        # The naive model returns the most recent values in chronological order
         hist_len = len(result['historical'])
-        ax.plot(range(-hist_len, 0), result['historical'], label='Historical Price', marker='o', linewidth=2)
         
-        # Plot predictions
-        pred_len = len(result['predictions'])
-        ax.plot(range(0, pred_len), result['predictions'], label='Predictions', marker='s', linewidth=2, linestyle='--')
+        # Get corresponding dates from the dataset for the historical values
+        # Since dataset is newest to oldest, the historical values (chronological order) 
+        # correspond to the most recent hist_len days in the dataset
+        actual_historical_data = df.head(hist_len)
+        
+        # Get dates and prices in chronological order (oldest to newest)
+        # Dataset is ordered newest to oldest, so we need to reverse both dates and prices
+        # to get chronological order that matches the result['historical'] values
+        date_range_raw = actual_historical_data['End'].tolist()[::-1]  # Reverse to get chronological order
+        historical_prices = actual_historical_data['Close'].tolist()[::-1]  # Reverse to match dates
+        
+        # Convert to datetime for plotting
+        date_range_dt = pd.to_datetime(date_range_raw)
+        
+        # Create interactive plotly figure
+        fig = go.Figure()
+        
+        # Add historical data
+        fig.add_trace(go.Scatter(
+            x=date_range_dt,
+            y=historical_prices,
+            mode='lines+markers',
+            name='Historical Price',
+            line=dict(width=2),
+            marker=dict(size=4),
+            hovertemplate='Date: %{x}<br>Price: $%{y:,.2f}<extra></extra>'
+        ))
+        
+        # Add predictions if any
+        if len(result['predictions']) > 0:
+            # Get the last actual date from the historical data (most recent)
+            last_actual_date_str = actual_historical_data['End'].iloc[0]  # Most recent date (first in dataset)
+            last_date = pd.to_datetime(last_actual_date_str)
+            future_dates = []
+            for i in range(1, len(result['predictions']) + 1):
+                future_date = last_date + pd.Timedelta(days=i)
+                future_dates.append(future_date)
+            
+            # Add predictions with different styling
+            fig.add_trace(go.Scatter(
+                x=future_dates,
+                y=result['predictions'],
+                mode='lines+markers',
+                name='Predictions',
+                line=dict(width=2, dash='dash'),
+                marker=dict(size=6),
+                hovertemplate='Date: %{x}<br>Predicted Price: $%{y:,.2f}<extra></extra>'
+            ))
         
         # Add a vertical line to separate historical from predictions
-        ax.axvline(x=0, color='red', linestyle='--', alpha=0.7, label='Prediction Start')
+        if len(date_range_dt) > 0:
+            last_date = date_range_dt[-1]  # Last date in chronological order (most recent actual)
+            # Get the y-axis range to draw the line across the full height
+            min_price = min(min(historical_prices), min(result['predictions']) if result['predictions'] else historical_prices)
+            max_price = max(max(historical_prices), max(result['predictions']) if result['predictions'] else historical_prices)
+            
+            # Add vertical line manually using add_shape
+            fig.add_shape(
+                type='line',
+                x0=last_date, x1=last_date,
+                y0=min_price, y1=max_price,
+                line=dict(color='red', width=2, dash='dash'),
+            )
+            
+            # Add annotation for the line
+            fig.add_annotation(
+                x=last_date,
+                y=max_price,
+                text="Prediction Start",
+                showarrow=False,
+                yshift=10,
+                xref='x',
+                yref='y'
+            )
         
-        ax.set_title(f'Bitcoin Price Prediction - {model_name}')
-        ax.set_xlabel('Days (relative to present)')
-        ax.set_ylabel('Price (USD)')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
+        # Update layout
+        fig.update_layout(
+            title=f'Bitcoin Price Prediction - {model_name}',
+            xaxis_title='Date',
+            yaxis_title='Price (USD)',
+            hovermode='x unified',
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            ),
+            height=600
+        )
         
-        plt.tight_layout()
+        # Format y-axis to show currency
+        fig.update_yaxes(tickprefix="$", tickformat=",")
         
         # Format metrics for display
         metrics_text = f"""
@@ -142,11 +222,14 @@ def run_prediction(model_name, window_size, horizon):
         
     except Exception as e:
         # Return error visualization
-        fig, ax = plt.subplots(figsize=(12, 6))
-        ax.text(0.5, 0.5, f"Error: {str(e)}", fontsize=14, ha='center', va='center')
-        ax.set_title('Error in Prediction')
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
+        fig = go.Figure()
+        fig.add_annotation(text=f"Error: {str(e)}",
+                          xref="paper", yref="paper",
+                          x=0.5, y=0.5,
+                          xanchor='center', yanchor='middle',
+                          showarrow=False,
+                          font=dict(size=18))
+        fig.update_layout(title_text="Error in Prediction", height=600)
         
         return fig, f"Error: {str(e)}", []
 
