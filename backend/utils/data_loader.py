@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import numpy as np
 
 def load_bitcoin_data():
     """
@@ -59,3 +60,46 @@ def prepare_windowed_data(data, window_size=7, horizon=1):
         horizons.append(horizon_data)
     
     return np.array(windows), np.array(horizons)
+
+def make_train_test_splits(windows, horizons, test_split=0.2):
+    """
+    Splits matching pairs of windows and horizons into train and test splits
+    This is important for time series as we need to maintain temporal order
+    """
+    split_size = int(len(windows) * (1 - test_split))  # Default 80% for training
+    
+    train_windows = windows[:split_size]
+    train_horizons = horizons[:split_size]
+    test_windows = windows[split_size:]
+    test_horizons = horizons[split_size:]
+    
+    return train_windows, train_horizons, test_windows, test_horizons
+
+def add_features(df):
+    """
+    Add additional features to the dataframe for more sophisticated models
+    """
+    df_features = df.copy()
+    
+    # Add basic technical indicators
+    df_features['Price_Change'] = df_features['Close'].pct_change()
+    df_features['Price_Diff'] = df_features['Close'].diff()
+    
+    # Add rolling statistics
+    df_features['Rolling_Mean_7'] = df_features['Close'].rolling(window=7).mean()
+    df_features['Rolling_Mean_30'] = df_features['Close'].rolling(window=30).mean()
+    df_features['Rolling_Std_7'] = df_features['Close'].rolling(window=7).std()
+    df_features['Rolling_Std_30'] = df_features['Close'].rolling(window=30).std()
+    
+    # Add lag features
+    df_features['Close_Lag_1'] = df_features['Close'].shift(1)
+    df_features['Close_Lag_7'] = df_features['Close'].shift(7)
+    
+    # Add rolling min/max
+    df_features['Rolling_Min_7'] = df_features['Close'].rolling(window=7).min()
+    df_features['Rolling_Max_7'] = df_features['Close'].rolling(window=7).max()
+    
+    # Fill NaN values created by rolling operations
+    df_features = df_features.ffill().bfill()
+    
+    return df_features
