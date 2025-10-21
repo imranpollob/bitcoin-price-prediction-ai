@@ -1,8 +1,8 @@
-# Bitcoin Price Prediction Dashboard
+# Bitcoin Price Prediction - Gradio MVP
 
 ## Project Overview
 
-Interactive web-based dashboard for Bitcoin price prediction using TensorFlow and advanced time series forecasting models. This project demonstrates the application of deep learning for financial forecasting through an intuitive user interface. The dashboard allows users to apply different models to predict Bitcoin prices and visualize the results in real-time.
+MVP for Bitcoin price prediction using TensorFlow and advanced time series forecasting models. Built with Gradio for rapid model demonstration and testing. This project focuses on showcasing machine learning expertise through implementation of 10 different models for financial forecasting.
 
 **Key Warning**: This is not financial advice. Time series forecasting for stock/crypto markets is notoriously difficult and often produces poor results. Use this tool for educational purposes only.
 
@@ -23,26 +23,13 @@ Interactive web-based dashboard for Bitcoin price prediction using TensorFlow an
 * **Multiple Evaluation Metrics**: MAE, RMSE, MAPE, and MASE for comprehensive model evaluation
 * **Proper Train/Test Splitting**: Sequential splitting appropriate for time series data
 
-### UI Features
-* **Interactive Dashboard**: Visual overview of Bitcoin price trends with model predictions
-* **Model Selection Interface**: Intuitive dropdown/panel to choose from the 10 different models
-* **Parameter Control Panel**: Real-time adjustment of window size, horizon, and other hyperparameters
-* **Real-time Chart Visualization**: Interactive plots showing historical data, predictions, and confidence intervals
-* **Model Comparison Tool**: Side-by-side comparison of multiple models' performance
-* **Data Input Interface**: Ability to upload custom data or select date ranges for analysis
-* **Performance Metrics Display**: Real-time visualization of MAE, RMSE, MAPE, MASE metrics
-* **Prediction Confidence Indicators**: Visual representation of prediction uncertainty
-* **Historical Prediction Backtesting**: Test models on past data and visualize results
-* **Export Functionality**: Download predictions, charts, and performance reports
-* **Model Training Interface**: Option to retrain models with custom parameters
-* **Feature Engineering Panel**: Select additional features like block rewards for multivariate models
-* **Alert System**: Configurable notifications when predictions exceed certain thresholds
-* **Scenario Analysis Tool**: Compare different prediction scenarios
-* **Model Performance Historical Tracking**: Track how models performed over time
-* **Custom Time Range Selection**: Select specific date ranges for training/prediction
-* **Interactive Data Annotation**: Mark significant events on the timeline
-* **Multi-timeframe Visualization**: View predictions on different time scales (daily, weekly, monthly)
-* **Risk Assessment Display**: Show potential risks based on model uncertainty
+### Gradio UI Features
+* **Simple Model Selection**: Intuitive dropdown to choose from different models
+* **Parameter Controls**: Sliders for window size and horizon configuration
+* **Interactive Chart Visualization**: Real-time plots showing historical data and predictions
+* **Performance Metrics Display**: Visualization of MAE, RMSE, MAPE, MASE metrics
+* **Quick Model Testing**: Rapid iteration and comparison between models
+* **Easy Sharing**: Gradio's sharing capabilities for demonstration
 
 ## Key Concepts
 

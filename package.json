@@ -1,33 +1,24 @@
 {
-  "name": "bitcoin-price-prediction-dashboard",
+  "name": "bitcoin-price-prediction-gradio-mvp",
   "version": "1.0.0",
-  "description": "Interactive dashboard for Bitcoin price prediction using TensorFlow",
+  "description": "Gradio-based MVP for Bitcoin price prediction using TensorFlow",
   "main": "index.js",
   "scripts": {
-    "start": "npm run start:frontend",
-    "start:frontend": "cd frontend && npm start",
-    "start:backend": "cd backend && python app.py",
-    "dev": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
-    "build": "cd frontend && npm run build",
-    "test": "npm run test:frontend && npm run test:backend",
-    "test:frontend": "cd frontend && npm test",
-    "test:backend": "cd backend && python -m pytest tests/",
-    "install:frontend": "cd frontend && npm install",
-    "install:backend": "cd backend && pip install -r requirements.txt"
+    "start": "python app_gradio.py",
+    "dev": "python app_gradio.py",
+    "test": "cd backend && python -m pytest tests/"
   },
   "keywords": [
     "bitcoin",
     "prediction",
     "tensorflow",
-    "dashboard",
+    "gradio",
     "time-series",
     "crypto",
-    "forecasting"
+    "forecasting",
+    "mvp"
   ],
   "author": "Your Name",
   "license": "MIT",
-  "devDependencies": {
-    "concurrently": "^8.2.0"
-  },
   "dependencies": {}
 }

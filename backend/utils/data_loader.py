@@ -6,7 +6,12 @@ def load_bitcoin_data():
     Load Bitcoin price data from CSV file
     """
     # Define the path to the Bitcoin data file
-    data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'bitcoin_2020-10-22_2025-10-21.csv')
+    # Check in the main project root first
+    data_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'bitcoin_2020-10-22_2025-10-21.csv')
+    
+    # If that doesn't work, check the backend directory
+    if not os.path.exists(data_path):
+        data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'bitcoin_2020-10-22_2025-10-21.csv')
     
     # Load the data
     df = pd.read_csv(data_path)
@@ -34,7 +39,7 @@ def load_bitcoin_data():
                     break
     
     # Fill any missing values
-    df = df.fillna(method='ffill').fillna(method='bfill')
+    df = df.ffill().bfill()
     
     return df
 
