@@ -6,7 +6,6 @@ __pycache__/
 # C extensions
 *.so
 
-10_time_series_forecasting_in_tensorflow.ipynb
 
 # Distribution / packaging
 .Python
