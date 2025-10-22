@@ -15,12 +15,11 @@ A comprehensive time series forecasting application that compares multiple deep 
 1. **Naive Forecast** - Baseline model (predicts last known price)
 2. **Dense (Window=7, Horizon=1)** - Simple feed-forward neural network
 3. **Dense (Window=30, Horizon=1)** - Dense model with larger window
-4. **Dense (Window=30, Horizon=7)** - Multi-step ahead prediction
-5. **Conv1D** - 1D Convolutional neural network for pattern recognition
-6. **LSTM** - Recurrent neural network with long short-term memory
-7. **Multivariate** - Uses both price and return rate features
-8. **N-BEATS** - Neural Basis Expansion Analysis for interpretable forecasting
-9. **Ensemble** - Combines Dense, Conv1D, and LSTM predictions
+4. **Conv1D** - 1D Convolutional neural network for pattern recognition
+5. **LSTM** - Recurrent neural network with long short-term memory
+6. **Multivariate** - Uses both price and return rate features
+7. **N-BEATS** - Neural Basis Expansion Analysis for interpretable forecasting
+8. **Ensemble** - Combines Dense, Conv1D, and LSTM predictions
 
 ## 🚀 Quick Start
 

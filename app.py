@@ -765,11 +765,6 @@ def model_2_dense():
     return model_1_dense(window_size=30, horizon=1)
 
 
-def model_3_dense():
-    """Model 3: Dense Model (Window=30, Horizon=7)"""
-    return model_1_dense(window_size=30, horizon=7)
-
-
 def model_4_conv1d():
     """Model 4: Conv1D Model (Window=7, Horizon=1)"""
     try:
@@ -904,7 +899,14 @@ def compare_all_models():
 
         metrics_df = pd.DataFrame(
             metrics_data,
-            columns=["Model", "MAE", "RMSE", "MAPE", "MASE", "Avg 7-Day Pred"],
+            columns=[
+                "Model",
+                "Avg Error ($)",
+                "Error Range ($)",
+                "Error %",
+                "vs Simple Guess",
+                "Avg 7-Day Prediction",
+            ],
         )
 
         # Create detailed prediction table
@@ -915,13 +917,13 @@ def compare_all_models():
                 prediction_table.append(
                     [
                         model_name,
-                        f"${preds[0]:.2f}",
-                        f"${preds[1]:.2f}",
-                        f"${preds[2]:.2f}",
-                        f"${preds[3]:.2f}",
-                        f"${preds[4]:.2f}",
-                        f"${preds[5]:.2f}",
-                        f"${preds[6]:.2f}",
+                        f"${preds[0]:,.2f}",
+                        f"${preds[1]:,.2f}",
+                        f"${preds[2]:,.2f}",
+                        f"${preds[3]:,.2f}",
+                        f"${preds[4]:,.2f}",
+                        f"${preds[5]:,.2f}",
+                        f"${preds[6]:,.2f}",
                     ]
                 )
 
@@ -929,7 +931,7 @@ def compare_all_models():
             prediction_table,
             columns=[
                 "Model",
-                "Day 1",
+                "Tomorrow",
                 "Day 2",
                 "Day 3",
                 "Day 4",
@@ -939,31 +941,75 @@ def compare_all_models():
             ],
         )
 
-        # Find best model by MAE
-        best_model_idx = metrics_df["MAE"].astype(float).idxmin()
+        # Find best model by MAE and calculate stats
+        best_model_idx = metrics_df["Avg Error ($)"].astype(float).idxmin()
         best_model = metrics_df.iloc[best_model_idx]["Model"]
-        best_mae = metrics_df.iloc[best_model_idx]["MAE"]
+        best_mae = metrics_df.iloc[best_model_idx]["Avg Error ($)"]
+
+        # Calculate prediction spread
+        all_day7_preds = [
+            result["future_predictions"][-1]
+            for result in all_results.values()
+            if result["future_predictions"] is not None
+        ]
+        min_pred = min(all_day7_preds)
+        max_pred = max(all_day7_preds)
+        avg_pred = np.mean(all_day7_preds)
+        spread_percent = ((max_pred - min_pred) / avg_pred) * 100
+
+        current_price = PRICES[-1]
+        avg_change = ((avg_pred - current_price) / current_price) * 100
+        consensus = (
+            "📈 BULLISH (Prices Going Up)"
+            if avg_change > 1
+            else (
+                "📉 BEARISH (Prices Going Down)"
+                if avg_change < -1
+                else "➡️ STABLE (Little Change)"
+            )
+        )
 
         metrics_text = f"""
-        ## 📊 Model Comparison Results
+        ## 📊 All Models Comparison
         
-        ### Test Set Performance Metrics:
+        ### 🎯 Which Model is Most Accurate?
+        
+        **🏆 Winner: {best_model}**
+        - Has the smallest average error: ${best_mae}
+        - This model's past predictions were closest to actual prices
+        
+        ### 📈 Accuracy Scores Explained:
         
         {metrics_df.to_markdown(index=False)}
         
-        ### 7-Day Future Predictions (Starting from {TIMESTEPS[-1].strftime('%Y-%m-%d')}):
-        
-        {pred_df.to_markdown(index=False)}
+        **How to read this table:**
+        - **Avg Error ($)**: Lower = better (how much predictions miss by, on average)
+        - **Error Range ($)**: Lower = better (typical range of errors)
+        - **Error %**: Lower = better (percentage off from actual price)
+        - **vs Simple Guess**: Less than 1.0 = better than just guessing "tomorrow = today"
         
         ---
         
-        **🏆 Best Model:** {best_model} (MAE: {best_mae})
+        ### 🔮 What Do Models Predict for the Next 7 Days?
         
-        **Note:** 
-        - Models are trained on 80% of data and evaluated on 20% test set
-        - Lower MAE, RMSE, MAPE, and MASE indicate better performance
-        - Future predictions are based on the most recent 7-day window
-        - Current Bitcoin price (last known): ${PRICES[-1]:.2f}
+        **Current Bitcoin Price: ${current_price:,.2f}**
+        
+        {pred_df.to_markdown(index=False)}
+        
+        ### 💡 Consensus Summary:
+        
+        - **Market Direction**: {consensus}
+        - **Day 7 Average Prediction**: ${avg_pred:,.2f} ({avg_change:+.2f}% from current)
+        - **Prediction Range**: ${min_pred:,.2f} - ${max_pred:,.2f}
+        - **Agreement Level**: {spread_percent:.1f}% spread
+          - **Low spread (<5%)** = Models mostly agree → Higher confidence
+          - **High spread (>10%)** = Models disagree → More uncertainty
+        
+        ---
+        
+        **⚠️ Important Disclaimer:**
+        These are AI predictions based on historical patterns. Cryptocurrency markets are highly volatile 
+        and unpredictable. Use these predictions as one of many tools, not as financial advice!
         """
 
         return fig, metrics_text
@@ -981,8 +1027,6 @@ def run_model(model_name):
             result = model_1_dense()
         elif model_name == "Model 2: Dense (Window=30, Horizon=1)":
             result = model_2_dense()
-        elif model_name == "Model 3: Dense (Window=30, Horizon=7)":
-            result = model_3_dense()
         elif model_name == "Model 4: Conv1D (Window=7, Horizon=1)":
             result = model_4_conv1d()
         elif model_name == "Model 5: LSTM (Window=7, Horizon=1)":
@@ -993,26 +1037,14 @@ def run_model(model_name):
             result = model_7_nbeats()
         elif model_name == "Model 8: Ensemble (Window=7, Horizon=1)":
             result = model_8_ensemble()
+            result = model_8_ensemble()
 
         # Create plot showing both test predictions and future predictions
         if result["predictions"] is not None:
-            # Create a figure with historical data, test predictions, and future predictions
+            # Create a figure with test predictions and future predictions
             fig = go.Figure()
 
-            # Plot historical prices (last 90 days)
-            historical_timesteps = TIMESTEPS[-90:]
-            historical_prices = PRICES[-90:]
-            fig.add_trace(
-                go.Scatter(
-                    x=historical_timesteps,
-                    y=historical_prices,
-                    mode="lines",
-                    name="Historical Prices",
-                    line=dict(color="blue", width=2),
-                )
-            )
-
-            # Plot test predictions
+            # Plot actual test prices
             fig.add_trace(
                 go.Scatter(
                     x=result["timesteps"],
@@ -1022,7 +1054,6 @@ def run_model(model_name):
                     line=dict(color="green", width=2),
                 )
             )
-
             fig.add_trace(
                 go.Scatter(
                     x=result["timesteps"],
@@ -1059,15 +1090,45 @@ def run_model(model_name):
         future_text = ""
         if result.get("future_predictions") is not None:
             future_mean = np.mean(result["future_predictions"])
-            future_text = f"\n        - **7-Day Avg Prediction**: ${future_mean:.2f}"
+            future_min = np.min(result["future_predictions"])
+            future_max = np.max(result["future_predictions"])
+            current_price = PRICES[-1]
+            price_change = ((future_mean - current_price) / current_price) * 100
+            direction = "📈 UP" if price_change > 0 else "📉 DOWN"
+
+            future_text = f"""
+        
+        ### 🔮 7-Day Future Prediction:
+        - **Average Predicted Price**: ${future_mean:,.2f}
+        - **Predicted Range**: ${future_min:,.2f} - ${future_max:,.2f}
+        - **Current Price**: ${current_price:,.2f}
+        - **Expected Change**: {direction} {abs(price_change):.2f}%
+        """
 
         metrics_text = f"""
-        **{result['model_name']} Results:**
-
-        - **MAE**: {result['metrics'].get('mae', 'N/A'):.4f}
-        - **RMSE**: {result['metrics'].get('rmse', 'N/A'):.4f}
-        - **MAPE**: {result['metrics'].get('mape', 'N/A'):.4f}
-        - **MASE**: {result['metrics'].get('mase', 'N/A'):.4f}{future_text}
+        ## {result['model_name']}
+        
+        ### ✅ How Accurate Was This Model?
+        
+        These scores show how close the model's predictions (orange line) were to the actual prices (green line):
+        
+        - **Average Error**: ${result['metrics'].get('mae', 0):,.2f}
+          - On average, predictions were off by this amount
+          - **Lower is better** - means predictions are closer to reality
+        
+        - **Typical Error Range**: ${result['metrics'].get('rmse', 0):,.2f}
+          - Most predictions fall within this range of the actual price
+          - **Lower is better** - means more consistent predictions
+        
+        - **Error Percentage**: {result['metrics'].get('mape', 0):.2f}%
+          - What percent off the predictions typically are
+          - **Lower is better** - under 5% is good, under 2% is excellent
+        
+        - **Accuracy vs Simple Guess**: {result['metrics'].get('mase', 0):.2f}x
+          - Compares to just guessing "tomorrow = today"
+          - **Less than 1.0 is good** - means this model beats simple guessing
+          - **More than 1.0** - simple guessing would be more accurate
+        {future_text}
         """
 
         return fig, metrics_text
@@ -1085,7 +1146,6 @@ def create_gradio_interface():
         "Model 0: Naive Forecast",
         "Model 1: Dense (Window=7, Horizon=1)",
         "Model 2: Dense (Window=30, Horizon=1)",
-        "Model 3: Dense (Window=30, Horizon=7)",
         "Model 4: Conv1D (Window=7, Horizon=1)",
         "Model 5: LSTM (Window=7, Horizon=1)",
         "Model 6: Multivariate Dense (Window=7, Horizon=1)",
@@ -1104,28 +1164,40 @@ def create_gradio_interface():
         with gr.Tabs():
             # Tab 1: Individual Model Testing
             with gr.Tab("Individual Model"):
-                with gr.Row():
-                    with gr.Column(scale=1):
-                        model_dropdown = gr.Dropdown(
-                            choices=model_options,
-                            value="Model 0: Naive Forecast",
-                            label="Select Model",
-                        )
-                        run_btn = gr.Button("Run Model", variant="primary", size="lg")
-                        gr.Markdown(
-                            """
-                        **Instructions:**
-                        1. Select a model from the dropdown
-                        2. Click "Run Model" to train and evaluate
-                        3. View predictions and metrics on the right
-                        
-                        Each model predicts 7 days into the future.
-                        """
-                        )
+                model_dropdown = gr.Dropdown(
+                    choices=model_options,
+                    value="Model 0: Naive Forecast",
+                    label="Select Model",
+                )
+                run_btn = gr.Button("🚀 Train & Predict", variant="primary", size="lg")
 
-                    with gr.Column(scale=2):
-                        plot_output = gr.Plot(label="Price Predictions")
-                        metrics_output = gr.Markdown(label="Performance Metrics")
+                plot_output = gr.Plot(label="Bitcoin Price Predictions")
+
+                gr.Markdown(
+                    """
+                ### 📊 How to Read the Chart:
+                
+                **🟢 Green Line - What Actually Happened**
+                - Shows real Bitcoin prices from the recent past
+                - Example: If Bitcoin was $50,000 on Jan 1st, the green line shows $50,000
+                
+                **🟠 Orange Line - How Well the Model Predicted the Past**
+                - Shows what the model predicted for prices we already know
+                - This helps us understand if the model is reliable
+                - Example: If green shows $50,000 and orange shows $49,500, the model was off by $500
+                
+                **🔴 Red Line - Future Forecast (Next 7 Days)**
+                - This is the actual prediction for tomorrow and the next 6 days
+                - These are unknown prices - we don't know yet if they'll be accurate
+                - Example: If red shows $51,000 for tomorrow, the model thinks Bitcoin will be worth $51,000
+                
+                **💡 Why Compare Orange vs Green?**
+                The closer the orange and green lines are, the more accurate the model has been in the past, 
+                which suggests it might be more reliable for future predictions (red line).
+                """
+                )
+
+                metrics_output = gr.Markdown(label="Model Accuracy Scores")
 
                 # Event handler for individual model
                 run_btn.click(
@@ -1138,21 +1210,40 @@ def create_gradio_interface():
             with gr.Tab("Compare All Models"):
                 gr.Markdown(
                     """
-                ### 📊 Train and Compare All Models
+                ### 🏆 Compare All Models Side-by-Side
                 
-                This will train all available models and compare their 7-day future predictions.
-                **Note:** This may take a few minutes as it trains 8 different models.
+                **What This Does:**
+                - Trains 7 different AI models on the same Bitcoin price history
+                - Shows each model's prediction for the next 7 days
+                - Helps you see which models agree or disagree about the future
+                
+                **⏱️ Note:** This takes 2-4 minutes to train all 7 models
                 """
                 )
 
                 compare_btn = gr.Button(
-                    "🚀 Train & Compare All Models", variant="primary", size="lg"
+                    "🚀 Train All Models & Compare", variant="primary", size="lg"
                 )
 
                 comparison_plot = gr.Plot(
-                    label="All Models Comparison - 7 Day Future Predictions"
+                    label="All Models - 7 Day Future Predictions Comparison"
                 )
-                comparison_metrics = gr.Markdown(label="Models Performance Comparison")
+
+                gr.Markdown(
+                    """
+                ### 📊 How to Read the Comparison Chart:
+                
+                - **Each colored line** = One model's prediction for the next 7 days
+                - **Lines close together?** Models agree on the future direction → More confidence
+                - **Lines spread apart?** Models disagree → More uncertainty about future prices
+                
+                **Example:**
+                - If 5 out of 7 models predict Bitcoin will be $52,000 in 7 days, that's more reliable
+                - If predictions range from $48,000 to $56,000, there's high uncertainty
+                """
+                )
+
+                comparison_metrics = gr.Markdown(label="Which Model is Most Accurate?")
 
                 # Event handler for comparison
                 compare_btn.click(
@@ -1162,16 +1253,21 @@ def create_gradio_interface():
         gr.Markdown(
             """
         ---
-        **About the Models:**
-        - **Naive Forecast**: Simple baseline that predicts the last known price
-        - **Dense Models**: Fully connected neural networks with different window sizes
-        - **Conv1D**: Convolutional neural network for temporal patterns
-        - **LSTM**: Recurrent neural network with long short-term memory
-        - **Multivariate**: Uses both price and return rate features
-        - **N-BEATS**: Neural Basis Expansion Analysis for interpretable forecasting
-        - **Ensemble**: Combines Dense, Conv1D, and LSTM predictions
+        ### 🤖 About the AI Models:
         
-        **Data:** Bitcoin prices from 2020-10-22 to 2025-10-21 (5 years)
+        Each model uses a different approach to learn from Bitcoin's price history:
+        
+        - **Naive Forecast**: Simplest approach - just assumes tomorrow's price = today's price (baseline to beat)
+        - **Dense Models**: Standard neural networks that find patterns in price sequences (like 7-day or 30-day windows)
+        - **Conv1D**: Designed to detect trends and patterns in time-based data (similar to how images are analyzed)
+        - **LSTM**: Specialized for remembering long-term patterns (can "remember" what happened weeks ago)
+        - **Multivariate**: Looks at both price AND rate of change for smarter predictions
+        - **N-BEATS**: Advanced architecture specifically designed for forecasting with interpretable results
+        - **Ensemble**: Combines Dense, Conv1D, and LSTM - like getting a second (and third) opinion
+        
+        ---
+        
+        **📅 Data Source:** Bitcoin daily closing prices from October 22, 2020 to October 21, 2025 (5 years)
         """
         )
 
