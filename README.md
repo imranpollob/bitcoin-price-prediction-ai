@@ -18,7 +18,6 @@ MVP for Bitcoin price prediction using TensorFlow and advanced time series forec
   * Model 7: N-BEATS Algorithm
   * Model 8: Ensemble Model
   * Model 9: Future Prediction Model
-  * Model 10: Turkey Problem Demonstration
 * **Window and Horizon Configuration**: Adjust the number of historical timesteps (window) and future prediction timesteps (horizon)
 * **Multiple Evaluation Metrics**: MAE, RMSE, MAPE, and MASE for comprehensive model evaluation
 * **Proper Train/Test Splitting**: Sequential splitting appropriate for time series data
