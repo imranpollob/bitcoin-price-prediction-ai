@@ -8,32 +8,11 @@ import os
 
 # Import model implementations
 from backend.models.naive_model import naive_forecast
+from backend.models.dense_model import dense_model_1_prediction, dense_model_2_prediction, dense_model_3_prediction
 from backend.utils.data_loader import load_bitcoin_data
 from backend.utils.evaluation import evaluate_model
 
-# Placeholder implementations for models (will be implemented fully later)
-def dense_model_prediction(data, window_size=7, horizon=1):
-    """Placeholder for Dense model prediction"""
-    prices = data['Close'].values
-    if len(prices) < window_size + horizon:
-        raise ValueError(f"Not enough data. Need at least {window_size + horizon} data points, got {len(prices)}")
-    
-    last_window = prices[-window_size:]
-    # Simple linear extrapolation as placeholder
-    predicted_value = last_window[-1] + np.mean(np.diff(last_window)) * horizon
-    predictions = [predicted_value] * horizon
-    
-    return {
-        'model': 'dense',
-        'predictions': predictions,
-        'historical': prices[-30:].tolist(),
-        'metrics': {
-            'mae': 100.0,
-            'rmse': 150.0,
-            'mape': 3.5,
-            'mase': 1.2
-        }
-    }
+
 
 def conv1d_model_prediction(data, window_size=7, horizon=1):
     """Placeholder for Conv1D model prediction"""
@@ -95,11 +74,11 @@ def run_prediction(model_name, window_size, horizon):
         if model_name == "Naive Forecast":
             result = naive_forecast(df, steps=horizon)
         elif model_name == "Dense Model (Window=7, Horizon=1)":
-            result = dense_model_prediction(df, 7, 1)
+            result = dense_model_1_prediction(df, 7, 1)
         elif model_name == "Dense Model (Window=30, Horizon=1)":
-            result = dense_model_prediction(df, 30, 1)
+            result = dense_model_2_prediction(df, 30, 1)
         elif model_name == "Dense Model (Window=30, Horizon=7)":
-            result = dense_model_prediction(df, 30, 7)
+            result = dense_model_3_prediction(df, 30, 7)
         elif model_name == "Conv1D Model":
             result = conv1d_model_prediction(df, window_size, horizon)
         elif model_name == "LSTM Model":

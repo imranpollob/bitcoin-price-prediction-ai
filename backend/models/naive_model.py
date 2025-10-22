@@ -47,7 +47,7 @@ def naive_forecast(data, steps=1):
     
     # Return all available historical values for visualization (in chronological order)
     # For better visualization, we can return more historical points
-    hist_len = min(365, len(prices))  # Return up to 365 days of historical data for visualization
+    hist_len = min(90, len(prices))  # Return up to 90 days (3 months) of historical data for visualization
     # Since the dataset is ordered newest to oldest, take the first 'hist_len' values
     # and reverse them to get chronological order (oldest to newest for visualization)
     historical_data = prices[:hist_len][::-1].tolist()
