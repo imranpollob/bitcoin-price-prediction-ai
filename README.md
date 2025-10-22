@@ -10,14 +10,14 @@ MVP for Bitcoin price prediction using TensorFlow and advanced time series forec
 
 ### Time Series Forecasting Capabilities
 * **10 Different Models**: 
-  * Model 0: Naive Forecast (Baseline)
-  * Model 1-3: Dense Models with various window/horizon configurations
-  * Model 4: Conv1D Model
-  * Model 5: LSTM Model
-  * Model 6: Multivariate Dense Model
-  * Model 7: N-BEATS Algorithm
-  * Model 8: Ensemble Model
-  * Model 9: Future Prediction Model
+  * Model 0: Naive Forecast (Baseline) ✅
+  * Model 1-3: Dense Models with various window/horizon configurations ✅
+  * Model 4: Conv1D Model ✅
+  * Model 5: LSTM Model ✅
+  * Model 6: Multivariate Dense Model ✅
+  * Model 7: N-BEATS Algorithm ✅
+  * Model 8: Ensemble Model ✅
+  * Model 9: Future Prediction Model ✅
 * **Window and Horizon Configuration**: Adjust the number of historical timesteps (window) and future prediction timesteps (horizon)
 * **Multiple Evaluation Metrics**: MAE, RMSE, MAPE, and MASE for comprehensive model evaluation
 * **Proper Train/Test Splitting**: Sequential splitting appropriate for time series data

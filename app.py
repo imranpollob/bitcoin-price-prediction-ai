@@ -37,6 +37,10 @@ BITCOIN_PRICES = load_bitcoin_data()
 PRICES = BITCOIN_PRICES["Price"].to_numpy()
 TIMESTEPS = BITCOIN_PRICES.index.to_numpy()
 
+# Create multivariate data (price + returns)
+BITCOIN_PRICES["Return"] = BITCOIN_PRICES["Price"].pct_change().fillna(0)
+MULTIVARIATE_DATA = BITCOIN_PRICES[["Price", "Return"]].to_numpy()
+
 
 # Utility functions
 def plot_time_series(timesteps, values, format=".", start=0, end=None, label=None):
@@ -116,6 +120,19 @@ def make_train_test_splits(windows, labels, test_split=0.2):
     test_windows = windows[split_size:]
     test_labels = labels[split_size:]
     return train_windows, test_windows, train_labels, test_labels
+
+
+# Multivariate windowing functions
+def get_labelled_windows_mv(x, window_size=7, horizon=1):
+    """Create windows and labels from multivariate time series data"""
+    windows = []
+    labels = []
+    for i in range(len(x) - window_size - horizon + 1):
+        window = x[i : i + window_size]
+        label = x[i + window_size : i + window_size + horizon, 0]  # predict price only
+        windows.append(window)
+        labels.append(label)
+    return np.array(windows), np.array(labels)
 
 
 # Evaluation functions
@@ -247,47 +264,330 @@ def model_5_lstm():
 
 
 def model_6_multivariate():
-    """Model 6: Multivariate Dense Model (placeholder)"""
-    return {
-        "predictions": None,
-        "actual": None,
-        "timesteps": None,
-        "metrics": {"mae": 0, "rmse": 0, "mape": 0, "mase": 0},
-        "model_name": "Multivariate Dense Model (Not implemented yet)",
-    }
+    """Model 6: Multivariate Dense Model (Window=7, Horizon=1)"""
+    try:
+        window_size, horizon = 7, 1
+        # Prepare windowed multivariate data
+        full_windows, full_labels = get_labelled_windows_mv(
+            MULTIVARIATE_DATA, window_size=window_size, horizon=horizon
+        )
+        train_windows, test_windows, train_labels, test_labels = make_train_test_splits(
+            full_windows, full_labels
+        )
+
+        # Build model
+        tf.random.set_seed(42)
+        inputs = tf.keras.layers.Input(
+            shape=(window_size, 2)
+        )  # 2 features: price and return
+        x = tf.keras.layers.Flatten()(inputs)
+        x = tf.keras.layers.Dense(128, activation="relu")(x)
+        output = tf.keras.layers.Dense(horizon)(x)
+        model = tf.keras.Model(
+            inputs=inputs, outputs=output, name="model_6_multivariate_dense"
+        )
+
+        model.compile(loss="mae", optimizer=tf.keras.optimizers.Adam(), metrics=["mae"])
+
+        # Train model
+        model.fit(
+            train_windows,
+            train_labels,
+            batch_size=128,
+            epochs=10,
+            verbose=0,
+            validation_data=(test_windows, test_labels),
+        )
+
+        # Make predictions
+        predictions = make_preds(model, test_windows)
+
+        # Get timesteps for plotting
+        split_size = int(len(full_windows) * 0.8)
+        test_timesteps = TIMESTEPS[
+            window_size + split_size : window_size + split_size + len(predictions)
+        ]
+
+        # Evaluate
+        results = evaluate_preds(y_true=tf.squeeze(test_labels), y_pred=predictions)
+
+        return {
+            "predictions": predictions.numpy(),
+            "actual": tf.squeeze(test_labels).numpy(),
+            "timesteps": test_timesteps,
+            "metrics": results,
+            "model_name": "Multivariate Dense Model (Window=7, Horizon=1)",
+        }
+    except Exception as e:
+        return {
+            "predictions": None,
+            "actual": None,
+            "timesteps": None,
+            "metrics": {"mae": 0, "rmse": 0, "mape": 0, "mase": 0},
+            "model_name": f"Multivariate Dense Model Error: {str(e)}",
+        }
+
+
+# N-BEATS Block for Model 7
+class NBeatsBlock(tf.keras.layers.Layer):
+    def __init__(self, units, input_size, horizon, **kwargs):
+        super().__init__(**kwargs)
+        self.fc1 = tf.keras.layers.Dense(units, activation="relu")
+        self.fc2 = tf.keras.layers.Dense(units, activation="relu")
+        self.fc3 = tf.keras.layers.Dense(units, activation="relu")
+        self.fc4 = tf.keras.layers.Dense(units, activation="relu")
+        self.theta_layer = tf.keras.layers.Dense(
+            units, activation="linear"
+        )  # Changed to units
+        self.backcast_layer = tf.keras.layers.Dense(
+            input_size, activation="linear"
+        )  # Changed to input_size
+        self.forecast_layer = tf.keras.layers.Dense(horizon, activation="linear")
+
+    def call(self, inputs):
+        x = self.fc1(inputs)
+        x = self.fc2(x)
+        x = self.fc3(x)
+        x = self.fc4(x)
+        theta = self.theta_layer(x)
+        backcast = self.backcast_layer(theta)
+        forecast = self.forecast_layer(theta)
+        return backcast, forecast
 
 
 def model_7_nbeats():
-    """Model 7: N-BEATS Model (placeholder)"""
-    return {
-        "predictions": None,
-        "actual": None,
-        "timesteps": None,
-        "metrics": {"mae": 0, "rmse": 0, "mape": 0, "mase": 0},
-        "model_name": "N-BEATS Model (Not implemented yet)",
-    }
+    """Model 7: N-BEATS Model (Window=7, Horizon=1)"""
+    try:
+        window_size, horizon = 7, 1
+        # Prepare windowed data
+        full_windows, full_labels = make_windows(
+            PRICES, window_size=window_size, horizon=horizon
+        )
+        train_windows, test_windows, train_labels, test_labels = make_train_test_splits(
+            full_windows, full_labels
+        )
+
+        # Build N-BEATS model
+        tf.random.set_seed(42)
+        inputs = tf.keras.layers.Input(shape=(window_size,))
+        x = inputs
+        for _ in range(3):  # Stack 3 N-BEATS blocks
+            backcast, forecast = NBeatsBlock(128, window_size, horizon)(x)
+            x = x - backcast  # Residual connection
+        outputs = forecast
+
+        model = tf.keras.Model(inputs=inputs, outputs=outputs, name="model_7_nbeats")
+        model.compile(loss="mae", optimizer=tf.keras.optimizers.Adam(), metrics=["mae"])
+
+        # Train model
+        model.fit(
+            train_windows,
+            train_labels,
+            batch_size=128,
+            epochs=10,
+            verbose=0,
+            validation_data=(test_windows, test_labels),
+        )
+
+        # Make predictions
+        predictions = make_preds(model, test_windows)
+
+        # Get timesteps for plotting
+        split_size = int(len(full_windows) * 0.8)
+        test_timesteps = TIMESTEPS[
+            window_size + split_size : window_size + split_size + len(predictions)
+        ]
+
+        # Evaluate
+        results = evaluate_preds(y_true=tf.squeeze(test_labels), y_pred=predictions)
+
+        return {
+            "predictions": predictions.numpy(),
+            "actual": tf.squeeze(test_labels).numpy(),
+            "timesteps": test_timesteps,
+            "metrics": results,
+            "model_name": "N-BEATS Model (Window=7, Horizon=1)",
+        }
+    except Exception as e:
+        return {
+            "predictions": None,
+            "actual": None,
+            "timesteps": None,
+            "metrics": {"mae": 0, "rmse": 0, "mape": 0, "mase": 0},
+            "model_name": f"N-BEATS Model Error: {str(e)}",
+        }
 
 
 def model_8_ensemble():
-    """Model 8: Ensemble Model (placeholder)"""
-    return {
-        "predictions": None,
-        "actual": None,
-        "timesteps": None,
-        "metrics": {"mae": 0, "rmse": 0, "mape": 0, "mase": 0},
-        "model_name": "Ensemble Model (Not implemented yet)",
-    }
+    """Model 8: Ensemble Model (Window=7, Horizon=1)"""
+    try:
+        window_size, horizon = 7, 1
+        # Prepare windowed data
+        full_windows, full_labels = make_windows(
+            PRICES, window_size=window_size, horizon=horizon
+        )
+        train_windows, test_windows, train_labels, test_labels = make_train_test_splits(
+            full_windows, full_labels
+        )
+
+        # Build and train multiple models
+        tf.random.set_seed(42)
+
+        # Dense Model
+        dense_model = tf.keras.Sequential(
+            [
+                tf.keras.layers.Dense(
+                    128, activation="relu", input_shape=(window_size,)
+                ),
+                tf.keras.layers.Dense(horizon),
+            ]
+        )
+        dense_model.compile(loss="mae", optimizer=tf.keras.optimizers.Adam())
+        dense_model.fit(
+            train_windows, train_labels, epochs=10, verbose=0, batch_size=128
+        )
+
+        # Conv1D Model
+        conv1d_model = tf.keras.Sequential(
+            [
+                tf.keras.layers.Reshape((window_size, 1), input_shape=(window_size,)),
+                tf.keras.layers.Conv1D(128, kernel_size=3, activation="relu"),
+                tf.keras.layers.Flatten(),
+                tf.keras.layers.Dense(horizon),
+            ]
+        )
+        conv1d_model.compile(loss="mae", optimizer=tf.keras.optimizers.Adam())
+        conv1d_model.fit(
+            train_windows, train_labels, epochs=10, verbose=0, batch_size=128
+        )
+
+        # LSTM Model
+        lstm_model = tf.keras.Sequential(
+            [
+                tf.keras.layers.Lambda(
+                    lambda x: tf.expand_dims(x, axis=1), input_shape=(window_size,)
+                ),
+                tf.keras.layers.LSTM(128, activation="relu"),
+                tf.keras.layers.Dense(horizon),
+            ]
+        )
+        lstm_model.compile(loss="mae", optimizer=tf.keras.optimizers.Adam())
+        lstm_model.fit(
+            train_windows, train_labels, epochs=10, verbose=0, batch_size=128
+        )
+
+        # Make predictions with each model
+        dense_preds = make_preds(dense_model, test_windows)
+        conv1d_preds = make_preds(conv1d_model, test_windows)
+        lstm_preds = make_preds(lstm_model, test_windows)
+
+        # Ensemble: average predictions
+        ensemble_preds = (dense_preds + conv1d_preds + lstm_preds) / 3
+
+        # Get timesteps for plotting
+        split_size = int(len(full_windows) * 0.8)
+        test_timesteps = TIMESTEPS[
+            window_size + split_size : window_size + split_size + len(ensemble_preds)
+        ]
+
+        # Evaluate
+        results = evaluate_preds(y_true=tf.squeeze(test_labels), y_pred=ensemble_preds)
+
+        return {
+            "predictions": ensemble_preds.numpy(),
+            "actual": tf.squeeze(test_labels).numpy(),
+            "timesteps": test_timesteps,
+            "metrics": results,
+            "model_name": "Ensemble Model (Window=7, Horizon=1)",
+        }
+    except Exception as e:
+        return {
+            "predictions": None,
+            "actual": None,
+            "timesteps": None,
+            "metrics": {"mae": 0, "rmse": 0, "mape": 0, "mase": 0},
+            "model_name": f"Ensemble Model Error: {str(e)}",
+        }
 
 
 def model_9_future():
-    """Model 9: Future Prediction Model (placeholder)"""
-    return {
-        "predictions": None,
-        "actual": None,
-        "timesteps": None,
-        "metrics": {"mae": 0, "rmse": 0, "mape": 0, "mase": 0},
-        "model_name": "Future Prediction Model (Not implemented yet)",
-    }
+    """Model 9: Future Prediction Model (Window=7, Horizon=1)"""
+    try:
+        window_size, horizon = 7, 1
+        # Prepare windowed data
+        full_windows, full_labels = make_windows(
+            PRICES, window_size=window_size, horizon=horizon
+        )
+        train_windows, test_windows, train_labels, test_labels = make_train_test_splits(
+            full_windows, full_labels
+        )
+
+        # Build and train model (using Dense as example)
+        tf.random.set_seed(42)
+        model = tf.keras.Sequential(
+            [
+                tf.keras.layers.Dense(
+                    128, activation="relu", input_shape=(window_size,)
+                ),
+                tf.keras.layers.Dense(horizon),
+            ]
+        )
+        model.compile(loss="mae", optimizer=tf.keras.optimizers.Adam())
+        model.fit(train_windows, train_labels, epochs=10, verbose=0, batch_size=128)
+
+        # Function to predict future prices
+        def predict_future(model, last_window, n_future=30):
+            future_preds = []
+            current_window = last_window.copy()
+            for _ in range(n_future):
+                pred = model.predict(current_window.reshape(1, -1), verbose=0)[0][0]
+                future_preds.append(pred)
+                current_window = np.roll(current_window, -1)
+                current_window[-1] = pred
+            return np.array(future_preds)
+
+        # Get last window from training data for future prediction
+        last_window = PRICES[-window_size:]
+        future_preds = predict_future(model, last_window, n_future=30)
+
+        # For evaluation, also make predictions on test set
+        test_preds = make_preds(model, test_windows)
+
+        # Get timesteps for plotting
+        split_size = int(len(full_windows) * 0.8)
+        test_timesteps = TIMESTEPS[
+            window_size + split_size : window_size + split_size + len(test_preds)
+        ]
+
+        # Create future timesteps
+        last_date = TIMESTEPS[-1]
+        future_timesteps = pd.date_range(last_date, periods=31, freq="D")[1:]
+
+        # For display, we'll show both test predictions and future predictions
+        # Combine them for visualization
+        combined_timesteps = np.concatenate([test_timesteps, future_timesteps])
+        combined_predictions = np.concatenate([test_preds.numpy(), future_preds])
+
+        # Evaluate on test set only
+        results = evaluate_preds(y_true=tf.squeeze(test_labels), y_pred=test_preds)
+
+        return {
+            "predictions": combined_predictions,
+            "actual": tf.squeeze(test_labels).numpy(),
+            "timesteps": combined_timesteps,
+            "metrics": results,
+            "model_name": "Future Prediction Model (Window=7, Horizon=1)",
+            "future_predictions": future_preds,
+            "future_timesteps": future_timesteps,
+        }
+    except Exception as e:
+        return {
+            "predictions": None,
+            "actual": None,
+            "timesteps": None,
+            "metrics": {"mae": 0, "rmse": 0, "mape": 0, "mase": 0},
+            "model_name": f"Future Prediction Model Error: {str(e)}",
+        }
     """Model 0: Naive Forecast (Baseline)"""
     # Create naive forecast: predict next value as current value
     split_size = int(0.8 * len(PRICES))
@@ -470,6 +770,14 @@ def run_model(model_name):
             result = model_4_conv1d()
         elif model_name == "Model 5: LSTM (Window=7, Horizon=1)":
             result = model_5_lstm()
+        elif model_name == "Model 6: Multivariate Dense (Window=7, Horizon=1)":
+            result = model_6_multivariate()
+        elif model_name == "Model 7: N-BEATS (Window=7, Horizon=1)":
+            result = model_7_nbeats()
+        elif model_name == "Model 8: Ensemble (Window=7, Horizon=1)":
+            result = model_8_ensemble()
+        elif model_name == "Model 9: Future Prediction (Window=7, Horizon=1)":
+            result = model_9_future()
 
         # Create plot
         if result["predictions"] is not None:
@@ -510,6 +818,10 @@ def create_gradio_interface():
         "Model 3: Dense (Window=30, Horizon=7)",
         "Model 4: Conv1D (Window=7, Horizon=1)",
         "Model 5: LSTM (Window=7, Horizon=1)",
+        "Model 6: Multivariate Dense (Window=7, Horizon=1)",
+        "Model 7: N-BEATS (Window=7, Horizon=1)",
+        "Model 8: Ensemble (Window=7, Horizon=1)",
+        "Model 9: Future Prediction (Window=7, Horizon=1)",
     ]
 
     with gr.Blocks(
