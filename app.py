@@ -313,10 +313,9 @@ def model_0_naive_forecast(window_size=7, horizon=1):
     }
 
 
-def model_5_lstm():
-    """Model 5: LSTM Model (Window=7, Horizon=1)"""
+def model_5_lstm(window_size=7, horizon=1):
+    """Model 5: LSTM Model"""
     try:
-        window_size, horizon = 7, 1
         # Prepare windowed data
         full_windows, full_labels = make_windows(
             PRICES, window_size=window_size, horizon=horizon
@@ -372,7 +371,7 @@ def model_5_lstm():
             "actual": tf.squeeze(test_labels).numpy(),
             "timesteps": test_timesteps,
             "metrics": results,
-            "model_name": "LSTM Model (Window=7, Horizon=1)",
+            "model_name": f"LSTM Model (Window={window_size}, Horizon={horizon})",
             "future_predictions": future_preds,
             "future_timesteps": future_timesteps,
         }
@@ -388,10 +387,9 @@ def model_5_lstm():
         }
 
 
-def model_6_multivariate():
-    """Model 6: Multivariate Dense Model (Window=7, Horizon=1)"""
+def model_6_multivariate(window_size=7, horizon=1):
+    """Model 6: Multivariate Dense Model"""
     try:
-        window_size, horizon = 7, 1
         # Prepare windowed multivariate data
         full_windows, full_labels = get_labelled_windows_mv(
             MULTIVARIATE_DATA, window_size=window_size, horizon=horizon
@@ -451,7 +449,7 @@ def model_6_multivariate():
             "actual": tf.squeeze(test_labels).numpy(),
             "timesteps": test_timesteps,
             "metrics": results,
-            "model_name": "Multivariate Dense Model (Window=7, Horizon=1)",
+            "model_name": f"Multivariate Dense Model (Window={window_size}, Horizon={horizon})",
             "future_predictions": future_preds,
             "future_timesteps": future_timesteps,
         }
@@ -494,10 +492,9 @@ class NBeatsBlock(tf.keras.layers.Layer):
         return backcast, forecast
 
 
-def model_7_nbeats():
-    """Model 7: N-BEATS Model (Window=7, Horizon=1)"""
+def model_7_nbeats(window_size=7, horizon=1):
+    """Model 7: N-BEATS Model"""
     try:
-        window_size, horizon = 7, 1
         # Prepare windowed data
         full_windows, full_labels = make_windows(
             PRICES, window_size=window_size, horizon=horizon
@@ -555,7 +552,7 @@ def model_7_nbeats():
             "actual": tf.squeeze(test_labels).numpy(),
             "timesteps": test_timesteps,
             "metrics": results,
-            "model_name": "N-BEATS Model (Window=7, Horizon=1)",
+            "model_name": f"N-BEATS Model (Window={window_size}, Horizon={horizon})",
             "future_predictions": future_preds,
             "future_timesteps": future_timesteps,
         }
@@ -571,10 +568,9 @@ def model_7_nbeats():
         }
 
 
-def model_8_ensemble():
-    """Model 8: Ensemble Model (Window=7, Horizon=1)"""
+def model_8_ensemble(window_size=7, horizon=1):
+    """Model 8: Ensemble Model"""
     try:
-        window_size, horizon = 7, 1
         # Prepare windowed data
         full_windows, full_labels = make_windows(
             PRICES, window_size=window_size, horizon=horizon
@@ -668,7 +664,7 @@ def model_8_ensemble():
             "actual": tf.squeeze(test_labels).numpy(),
             "timesteps": test_timesteps,
             "metrics": results,
-            "model_name": "Ensemble Model (Window=7, Horizon=1)",
+            "model_name": f"Ensemble Model (Window={window_size}, Horizon={horizon})",
             "future_predictions": future_preds,
             "future_timesteps": future_timesteps,
         }
@@ -760,15 +756,9 @@ def model_1_dense(window_size=7, horizon=1):
         }
 
 
-def model_2_dense():
-    """Model 2: Dense Model (Window=30, Horizon=1)"""
-    return model_1_dense(window_size=30, horizon=1)
-
-
-def model_4_conv1d():
-    """Model 4: Conv1D Model (Window=7, Horizon=1)"""
+def model_4_conv1d(window_size=7, horizon=1):
+    """Model 4: Conv1D Model"""
     try:
-        window_size, horizon = 7, 1
         # Prepare windowed data
         full_windows, full_labels = make_windows(
             PRICES, window_size=window_size, horizon=horizon
@@ -829,7 +819,7 @@ def model_4_conv1d():
             "actual": tf.squeeze(test_labels).numpy(),
             "timesteps": test_timesteps,
             "metrics": results,
-            "model_name": "Conv1D Model (Window=7, Horizon=1)",
+            "model_name": f"Conv1D Model (Window={window_size}, Horizon={horizon})",
             "future_predictions": future_preds,
             "future_timesteps": future_timesteps,
         }
@@ -1018,26 +1008,25 @@ def compare_all_models():
         return None, f"Error comparing models: {str(e)}"
 
 
-def run_model(model_name):
+def run_model(model_name, window_size=7):
     """Run selected model with given parameters"""
     try:
+        horizon = 1  # All models use horizon=1
+
         if model_name == "Model 0: Naive Forecast":
-            result = model_0_naive_forecast()
-        elif model_name == "Model 1: Dense (Window=7, Horizon=1)":
-            result = model_1_dense()
-        elif model_name == "Model 2: Dense (Window=30, Horizon=1)":
-            result = model_2_dense()
-        elif model_name == "Model 4: Conv1D (Window=7, Horizon=1)":
-            result = model_4_conv1d()
-        elif model_name == "Model 5: LSTM (Window=7, Horizon=1)":
-            result = model_5_lstm()
-        elif model_name == "Model 6: Multivariate Dense (Window=7, Horizon=1)":
-            result = model_6_multivariate()
-        elif model_name == "Model 7: N-BEATS (Window=7, Horizon=1)":
-            result = model_7_nbeats()
-        elif model_name == "Model 8: Ensemble (Window=7, Horizon=1)":
-            result = model_8_ensemble()
-            result = model_8_ensemble()
+            result = model_0_naive_forecast(window_size=window_size, horizon=horizon)
+        elif model_name == "Model 1: Dense":
+            result = model_1_dense(window_size=window_size, horizon=horizon)
+        elif model_name == "Model 4: Conv1D":
+            result = model_4_conv1d(window_size=window_size, horizon=horizon)
+        elif model_name == "Model 5: LSTM":
+            result = model_5_lstm(window_size=window_size, horizon=horizon)
+        elif model_name == "Model 6: Multivariate Dense":
+            result = model_6_multivariate(window_size=window_size, horizon=horizon)
+        elif model_name == "Model 7: N-BEATS":
+            result = model_7_nbeats(window_size=window_size, horizon=horizon)
+        elif model_name == "Model 8: Ensemble":
+            result = model_8_ensemble(window_size=window_size, horizon=horizon)
 
         # Create plot showing both test predictions and future predictions
         if result["predictions"] is not None:
@@ -1144,13 +1133,12 @@ def create_gradio_interface():
     # Model options
     model_options = [
         "Model 0: Naive Forecast",
-        "Model 1: Dense (Window=7, Horizon=1)",
-        "Model 2: Dense (Window=30, Horizon=1)",
-        "Model 4: Conv1D (Window=7, Horizon=1)",
-        "Model 5: LSTM (Window=7, Horizon=1)",
-        "Model 6: Multivariate Dense (Window=7, Horizon=1)",
-        "Model 7: N-BEATS (Window=7, Horizon=1)",
-        "Model 8: Ensemble (Window=7, Horizon=1)",
+        "Model 1: Dense",
+        "Model 4: Conv1D",
+        "Model 5: LSTM",
+        "Model 6: Multivariate Dense",
+        "Model 7: N-BEATS",
+        "Model 8: Ensemble",
     ]
 
     with gr.Blocks(
@@ -1164,11 +1152,31 @@ def create_gradio_interface():
         with gr.Tabs():
             # Tab 1: Individual Model Testing
             with gr.Tab("Individual Model"):
+                gr.Markdown(
+                    """
+                ### 📈 How to Use:
+                1. **Select a model** from the dropdown below
+                2. **Adjust the window size** - how many days of history the model looks at
+                3. **Click "Train & Predict"** - the model will learn from historical Bitcoin data
+                4. **View results** - see how accurate the model is and what it predicts for the next 7 days
+                """
+                )
+
                 model_dropdown = gr.Dropdown(
                     choices=model_options,
                     value="Model 0: Naive Forecast",
                     label="Select Model",
                 )
+
+                window_size_slider = gr.Slider(
+                    minimum=3,
+                    maximum=60,
+                    value=7,
+                    step=1,
+                    label="Window Size (days)",
+                    info="How many days of historical data the model uses to make predictions. Smaller = faster/simpler, Larger = more context but slower",
+                )
+
                 run_btn = gr.Button("🚀 Train & Predict", variant="primary", size="lg")
 
                 plot_output = gr.Plot(label="Bitcoin Price Predictions")
@@ -1202,7 +1210,7 @@ def create_gradio_interface():
                 # Event handler for individual model
                 run_btn.click(
                     fn=run_model,
-                    inputs=[model_dropdown],
+                    inputs=[model_dropdown, window_size_slider],
                     outputs=[plot_output, metrics_output],
                 )
 
