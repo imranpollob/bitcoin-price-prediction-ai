@@ -836,22 +836,39 @@ def model_4_conv1d(window_size=7, horizon=1):
 
 
 # Gradio interface functions
-def compare_all_models():
+def compare_all_models(window_size=7):
     """Train all models and compare their 7-day future predictions"""
     try:
-        print("Training all models...")
+        print(f"Training all models with window_size={window_size}...")
         all_results = {}
+        horizon = 1  # All models use horizon=1
 
-        # Train all models
+        # Train all models with the same window size
         models_to_run = [
-            ("Naive Forecast", model_0_naive_forecast),
-            ("Dense (W=7, H=1)", lambda: model_1_dense(window_size=7, horizon=1)),
-            ("Dense (W=30, H=1)", lambda: model_1_dense(window_size=30, horizon=1)),
-            ("Conv1D", model_4_conv1d),
-            ("LSTM", model_5_lstm),
-            ("Multivariate", model_6_multivariate),
-            ("N-BEATS", model_7_nbeats),
-            ("Ensemble", model_8_ensemble),
+            (
+                "Naive Forecast",
+                lambda: model_0_naive_forecast(
+                    window_size=window_size, horizon=horizon
+                ),
+            ),
+            ("Dense", lambda: model_1_dense(window_size=window_size, horizon=horizon)),
+            (
+                "Conv1D",
+                lambda: model_4_conv1d(window_size=window_size, horizon=horizon),
+            ),
+            ("LSTM", lambda: model_5_lstm(window_size=window_size, horizon=horizon)),
+            (
+                "Multivariate",
+                lambda: model_6_multivariate(window_size=window_size, horizon=horizon),
+            ),
+            (
+                "N-BEATS",
+                lambda: model_7_nbeats(window_size=window_size, horizon=horizon),
+            ),
+            (
+                "Ensemble",
+                lambda: model_8_ensemble(window_size=window_size, horizon=horizon),
+            ),
         ]
 
         for model_name, model_func in models_to_run:
@@ -1222,11 +1239,21 @@ def create_gradio_interface():
                 
                 **What This Does:**
                 - Trains 7 different AI models on the same Bitcoin price history
+                - All models use the same window size for fair comparison
                 - Shows each model's prediction for the next 7 days
                 - Helps you see which models agree or disagree about the future
                 
                 **⏱️ Note:** This takes 2-4 minutes to train all 7 models
                 """
+                )
+
+                comparison_window_slider = gr.Slider(
+                    minimum=3,
+                    maximum=60,
+                    value=7,
+                    step=1,
+                    label="Window Size (days) - Applied to All Models",
+                    info="All models will use this window size for fair comparison. Larger windows = slower training.",
                 )
 
                 compare_btn = gr.Button(
@@ -1255,7 +1282,9 @@ def create_gradio_interface():
 
                 # Event handler for comparison
                 compare_btn.click(
-                    fn=compare_all_models, outputs=[comparison_plot, comparison_metrics]
+                    fn=compare_all_models,
+                    inputs=[comparison_window_slider],
+                    outputs=[comparison_plot, comparison_metrics],
                 )
 
         gr.Markdown(

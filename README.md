@@ -11,13 +11,7 @@ A comprehensive time series forecasting application that compares multiple deep 
 - **Comprehensive Metrics**: Easy-to-understand accuracy scores with plain English explanations
 - **Visual Comparison**: Side-by-side comparison of all models' predictions with interactive charts
 
-## 🆕 Recent Updates
-
-- ✅ **Adjustable Window Size**: Use the slider to control how much historical data models analyze
-- ✅ **User-Friendly UI**: Complete redesign with simple explanations and examples
-- ✅ **Simplified Metrics**: Technical terms like MAE, RMSE replaced with "Average Error", "Error Range"
-- ✅ **Better Visualizations**: Color-coded charts with clear legends (Green=Actual, Orange=Test, Red=Future)
-- ✅ **Consensus Summary**: See which direction most models agree on (Bullish/Bearish/Stable)
+![](screenshot.png)
 
 ## 📊 Available Models
 
